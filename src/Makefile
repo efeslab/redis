@@ -14,13 +14,13 @@
 
 release_hdr := $(shell sh -c './mkreleasehdr.sh')
 uname_S := $(shell sh -c 'uname -s 2>/dev/null || echo not')
-OPTIMIZATION?=-O2
+OPTIMIZATION?=-O0
 DEPENDENCY_TARGETS=hiredis linenoise lua geohash-int
 
 # Default settings
-STD=-std=c99 -pedantic -DREDIS_STATIC=''
+STD=-std=gnu99 -pedantic -DREDIS_STATIC=''
 WARN=-Wall -W
-OPT=$(OPTIMIZATION)
+OPT=-O0
 
 PREFIX?=/usr/local
 INSTALL_BIN=$(PREFIX)/bin
@@ -51,7 +51,8 @@ ifeq ($(USE_JEMALLOC),no)
 endif
 
 # Override default settings if possible
--include .make-settings
+# Ian: This is such a pain in the butt.
+#-include .make-settings
 
 FINAL_CFLAGS=$(STD) $(WARN) $(OPT) $(DEBUG) $(CFLAGS) $(REDIS_CFLAGS) -I../deps/geohash-int
 FINAL_LDFLAGS=$(LDFLAGS) $(REDIS_LDFLAGS) $(DEBUG)
@@ -108,15 +109,27 @@ ifeq ($(MALLOC),jemalloc)
 	FINAL_LIBS+= ../deps/jemalloc/lib/libjemalloc.a
 endif
 
+PMDK_DIR?=../../deps/pmdk
+INTERNAL_PMDK?=no
+USE_PMDK?=yes
+
 ifeq ($(USE_PMDK),yes)
-	DEPENDENCY_TARGETS+= pmdk
-	FINAL_CFLAGS+= -I../deps/pmdk/src/include -I../deps/pmdk/src/libpmemobj -I../deps/pmdk/src/common -DUSE_PMDK
-ifeq ($(NVML_DEBUG),yes)
-	FINAL_LIBS+= ../deps/pmdk/src/debug/libpmemobj.so ../deps/pmdk/src/debug/libpmem.so
-else
-	FINAL_LIBS+= ../deps/pmdk/src/nondebug/libpmemobj.so ../deps/pmdk/src/nondebug/libpmem.so
+
+ifeq ($(INTERNAL_PMDK),yes)
+	DEPENDENCY_TARGETS += pmdk
 endif
-	FINAL_LIBS+= -ldl
+
+	FINAL_CFLAGS+= -I$(PMDK_DIR)/src/include -I$(PMDK_DIR)/src/libpmemobj -I$(PMDK_DIR)/src/common -DUSE_PMDK
+
+	FINAL_CFLAGS+= -DUSE_PMDK
+
+ifeq ($(NVML_DEBUG),yes)
+	FINAL_LIBS+= -L$(PMDK_DIR)/src/debug/ 
+else
+	FINAL_LIBS+= -L$(PMDK_DIR)/src/nondebug/
+endif
+
+	FINAL_LIBS+= -ldl -lpmemobj -lpmem
 endif
 
 REDIS_CC=$(QUIET_CC)$(CC) $(FINAL_CFLAGS)
@@ -178,6 +191,7 @@ persist-settings: distclean
 	echo REDIS_LDFLAGS=$(REDIS_LDFLAGS) >> .make-settings
 	echo PREV_FINAL_CFLAGS=$(FINAL_CFLAGS) >> .make-settings
 	echo PREV_FINAL_LDFLAGS=$(FINAL_LDFLAGS) >> .make-settings
+	echo FINAL_LIBS=$(FINAL_LIBS) >> .make-settings
 	-(cd ../deps && $(MAKE) $(DEPENDENCY_TARGETS))
 
 .PHONY: persist-settings
@@ -198,6 +212,7 @@ endif
 # redis-server
 $(REDIS_SERVER_NAME): $(REDIS_SERVER_OBJ)
 	$(REDIS_LD) -o $@ $^ ../deps/hiredis/libhiredis.a ../deps/lua/src/liblua.a $(REDIS_GEOHASH_OBJ) $(FINAL_LIBS)
+	patchelf --set-rpath $(PMDK_DIR)/src/debug/ $@
 
 # redis-sentinel
 $(REDIS_SENTINEL_NAME): $(REDIS_SERVER_NAME)
