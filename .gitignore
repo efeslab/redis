@@ -9,6 +9,7 @@ redis-check-dump
 redis-cli
 redis-sentinel
 redis-server
+redis-server*
 doc-tools
 release
 misc/*
@@ -27,3 +28,9 @@ deps/lua/src/liblua.a
 .make-*
 .prerequisites
 *.dSYM
+*.o
+*.bc
+*.s
+*.ll
+src/*.txt
+*.trace
