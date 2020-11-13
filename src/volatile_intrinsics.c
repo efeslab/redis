@@ -1,9 +1,7 @@
-#include <immintrin.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
-
 
 /**
  * Memory functions.
@@ -34,7 +32,7 @@ void *memmove(void *dest, const void *src, size_t n) {
     assert(n < INT64_MAX);
 
 	if (from == to || n == 0) {
-        return;
+        return dest;
     }
 
 	if (to > from && to-from < n) {
@@ -42,11 +40,11 @@ void *memmove(void *dest, const void *src, size_t n) {
 		/*  <from......>         */
 		/*         <to........>  */
 		/* copy in reverse, to avoid overwriting from */
-		for(int64_t i = n-1; i >= 0; i--) {
+		for(size_t i = n-1; i >= 0 && i < n; i--) {
             to[i] = from[i];
         }
 
-        return;
+        return dest;
 	}
 
 	if (from > to && from-to < (int)n) {
@@ -55,14 +53,14 @@ void *memmove(void *dest, const void *src, size_t n) {
 		/*  <to........>         */
 		/* copy forwards, to avoid overwriting from */
 
-        for(int64_t i=0; i < n; i++) {
+        for(size_t i=0; i < n; i++) {
             to[i] = from[i];
         }
 
-        return;
+        return dest;
 	}
 
-	memcpy(dest, src, n);
+	return memcpy(dest, src, n);
 }
 
 /**
