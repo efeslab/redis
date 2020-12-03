@@ -6,7 +6,8 @@
 /**
  * Memory functions.
  */
-
+#define USE_VOLATILE_INTRINSICS 0
+#if USE_VOLATILE_INTRINSICS
 void *memset(void *dest, int c, size_t n) {
     uint8_t *d = (uint8_t*)dest;
     for (size_t i = 0; i < n; ++i) {
@@ -89,4 +90,4 @@ char *strncpy(char *dest, const char *src, size_t n) {
 
     return dest;
 }
-
+#endif
