@@ -4015,14 +4015,15 @@ void initPersistentMemory(void) {
     if (server.pm_pool == NULL) {
         /* Open the existing PMEM pool file. */
         server.pm_pool = pmemobj_open(server.pm_file_path, PM_LAYOUT_NAME);
-        server.pm_rootoid = POBJ_ROOT(server.pm_pool, struct redis_pmem_root);
-	server.pm_reconstruct_required = true;
-
+       
         if (server.pm_pool == NULL) {
             serverLog(LL_WARNING,"Cannot init persistent memory poolset file "
                 "%s size %s", server.pm_file_path, pmfile_hmem);
             exit(1);
         }
+		
+		server.pm_rootoid = POBJ_ROOT(server.pm_pool, struct redis_pmem_root);
+		server.pm_reconstruct_required = true;
     } else {
         server.pm_rootoid = POBJ_ROOT(server.pm_pool, struct redis_pmem_root);
         root = pmemobj_direct(server.pm_rootoid.oid);
