@@ -4022,8 +4022,8 @@ void initPersistentMemory(void) {
             exit(1);
         }
 		
-		server.pm_rootoid = POBJ_ROOT(server.pm_pool, struct redis_pmem_root);
-		server.pm_reconstruct_required = true;
+        server.pm_rootoid = POBJ_ROOT(server.pm_pool, struct redis_pmem_root);
+        server.pm_reconstruct_required = true;
     } else {
         server.pm_rootoid = POBJ_ROOT(server.pm_pool, struct redis_pmem_root);
         root = pmemobj_direct(server.pm_rootoid.oid);
